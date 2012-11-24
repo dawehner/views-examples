@@ -125,7 +125,8 @@ function views_embed_view($name, $display_id = 'default') {
       <h2>Aufgabe</h2>
       <ul>
         <li>Binde eine View in eine node Template ein.</li>
-        <li>Baue argumente ein.</li>
+        <li>Baue Argumente ein.</li>
+        <li>Fragen zu Beginn?</li>
       </ul>
     </section>
 
@@ -173,8 +174,10 @@ function views_embed_view($name, $display_id = 'default') {
 function $module_views_api() {
   return array(
     'api' => '3.0',
-    'path' => '', // (optional) Ordner der $module.views.inc
-    'template path' => '', // (optional) Ordner der Templates
+    // (optional) Ordner der $module.views.inc
+    'path' => '',
+    // (optional) Ordner der Templates
+    'template path' => '', drupal_get_path('module', $module) . '/theme',
   );
 }
     </code></pre>
@@ -183,6 +186,15 @@ function $module_views_api() {
       </ul>
     </section>
 
+    <section>
+      <h2>Aufgabe: </h2>
+      <ul>
+        <li>Baue eine View  <br><br></li>
+        <li>Schreibe ein Modul mit hook_views_api <br><br></li>
+        <li>Stelle ein Template fuer diese View im Modul bereit (Order "templates"). <br><br></li>
+        <li>Fragen zu Beginn?</li>
+      </ul>
+    </section>
 
     <section>
       <h2>Wie funktionieren Plugins?</h2>
@@ -195,7 +207,7 @@ $handler->display->display_options['exposed_form']['type'] = 'basic';
 $handler->display->display_options['pager']['type'] = 'full';
       </code></pre>
         </li>
-        <li>Plugins werden geladen und initalisiert:
+        <li>Plugins werden geladen und initialisiert:
       <pre><code class="php">
 $plugin = views_get_plugin($type, $name);
 $plugin->init($view, $display, $options);
@@ -225,16 +237,56 @@ function $module_views_plugins() {
     </section>
 
     <section>
-     <h2>STOP: Häufige Probleme zu Beginn</h2>
+      <h2>Plugin-typ: Argument default</h2>
+      <ul>
+        <li>Stelle Werte für Contextual filter bereit, falls kein Argument übergeben wurde <br><br></li>
+        <li>Klasse mit einer Methode: get_argument()</li>
+        <li>
+          <pre><code class="php">
+class $module_views_plugin_argument_default_$name extends views_plugin_argument_default {
+  function get_argument() {
+    return 123;
+  }
+}
+          </code></pre>
+        </li>
+        <li>Vorteil gegenüber Eval: PHP Code in der Versionskontrolle</li>
+      </ul>
+    </section>
+
+    <section>
+     <h2>!STOP: Häufige Probleme zu Beginn!</h2>
      <ul>
-       <li><strong>hook_views_plugins wird nicht ausgeführt</strong>: hook_views_api/$module.views.inc? <br><br></li>
-       <li><strong>Plugin nicht angezeigt</strong>: return $plugins vergessen?<br><br></li>
-       <li><strong>Plugin wird nicht gespeichert</strong>: Klasse in die $module.info eintragen?<br><br></li>
+       <li><strong>hook_views_plugins wird nicht ausgeführt</strong>:<br>
+         hook_views_api/$module.views.inc ✓<br><br></li>
+       <li><strong>Plugin nicht angezeigt</strong>: <br>
+         return $plugins vergessen ✓<br><br></li>
+       <li><strong>Plugin wird nicht gespeichert</strong>: <br>
+         Klasse in die $module.info eintragen ✓<br><br></li>
      </ul>
    </section>
 
     <section>
-      <h2></h2>
+      <h2>Tipps</h2>
+      <ul>
+        <li>
+          Setze hilfreiche Einstellungen für Entwickler
+          <pre><code>
+$ drush vd
+$ drush views-development
+          </code></pre>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Aufgabe:</h2>
+      <ul>
+        <li>Schreibe ein Modul <br><br></li>
+        <li>Implementiere hook_views_api <br><br></li>
+        <li>Implementiere hook_views_plugins in $module.views.inc <br><br></li>
+        <li>Default argument plugin, welches rand(0, 100) zurückliefert. <br><br></li>
+      </ul>
     </section>
 
   </div>
