@@ -1,0 +1,6 @@
+name = Views Plugin (1)
+description = First example code
+
+core = 7.x
+
+files[] = views_plugin_1_plugin_argument_default_first.inc
