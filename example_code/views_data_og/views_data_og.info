@@ -1,0 +1,8 @@
+name = Views Data Orangic Group example
+description = Shows how to extend existing views integration.
+core = 7.x
+
+dependencies[] = views
+dependencies[] = og
+
+files[] = views_data_og_handler_relationship_og_membership.inc

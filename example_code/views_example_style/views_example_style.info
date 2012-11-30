@@ -1,0 +1,7 @@
+name = Views example plugin style
+description = Shows how to write a custom style plugin
+
+core = 7.x
+dependencies[] = views
+
+files[] = views_example_style_plugin_style_fieldset.inc

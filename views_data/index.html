@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/html"
+  xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>How does Views works</title>
+
+  <meta name="description"
+    content="A framework for easily creating beautiful presentations using HTML">
+  <meta name="author" content="Hakim El Hattab">
+
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"/>
+
+  <link
+    href='http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic'
+    rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="css/reveal.css">
+  <link rel="stylesheet" href="css/theme/default.css" id="theme">
+  <link rel="stylesheet" href="css/helper.css" id="custom">
+
+  <!-- For syntax highlighting -->
+  <link rel="stylesheet" href="lib/css/solarized_dark.css">
+
+  <script>
+    // If the query includes 'print-pdf' we'll use the PDF print sheet
+    document.write('<link rel="stylesheet" href="css/print/' + ( window.location.search.match(/print-pdf/gi) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">');
+  </script>
+
+  <!--[if lt IE 9]>
+  <script src="lib/js/html5shiv.js"></script>
+  <![endif]-->
+</head>
+
+<body>
+
+<div class="reveal">
+  <div class="state-background"></div>
+
+  <div class="slides">
+    <!--Front-->
+    <section>
+      <h1>Build the view</h1>
+    </section>
+
+    <!-- Summary -->
+    <section>
+      <h2>übersicht</h2>
+      <ul class="double-margin">
+        <li class="fragment">Integrieren eigener Tabellen am Beispiel</li>
+        <li class="fragment">Erweiterte Integration/Anpassung der Query</li>
+        <li class="fragment">Kurzer Überblick über Innereien</li>
+        <li class="fragment">Plugin-Entwicklung an Beispielen</li>
+        <li class="fragment">D8</li>
+      </ul>
+    </section>
+
+
+    <!-- Objekte -->
+    <section>
+      <h2>Objekte in Views</h2>
+      <ul class="double-margin">
+        <li>$view</li>
+        <li>$display</li>
+        <li>$plugin</li>
+        <li>$handler</li>
+      </ul>
+    </section>
+
+    <!--$view-->
+    <section>
+      <h2>Das Views Object</h2>
+      <ul>
+        <li>Die zentrale Schaltzentrale:</li>
+        <li> Ausführen</li>
+        <li> Rendern</li>
+        <li> Laden</li>
+        <li> Delegiert Aufgaben</li>
+      </ul>
+    </section>
+
+    <!--$display-->
+    <section>
+      <h2>$display</h2>
+      <section>
+        <ul>
+          <li>Enthält die Daten einer View</li>
+          <li>Kennt den Kontext in der View eingebunden ist</li>
+          <li>Verwaltet die Plugins/Handlers</li>
+          <li>Beispiele: Page, Block</li>
+        </ul>
+      </section>
+      <section>
+        <img src="../images/display.png" />
+      </section>
+    </section>
+
+    <!--PLUGINS-->
+
+    <!-- Life of a view -->
+    <section>
+      <section>
+        <h2>Das Leben einer View</h2>
+        <ul>
+          <li class="fragment">
+            <strong>Lade</strong> die Einstellungen der View in die Displays
+          </li>
+          <li class="fragment">
+            <strong>Initialisiere</strong> die Displays, danach alles andere
+          </li>
+          <li class="fragment">
+            <strong>Baue</strong> die SQL Query -> Query -> Style, Felder, Filter etc.
+          </li>
+          <li class="fragment">
+            <strong>Führe</strong> die SQL Query aus -> Query
+          </li>
+          <li class="fragment">
+            <strong>Rendere</strong> den Inhalt -> Display -> Style -> Row -> Fields
+          </li>
+          <li class="fragment">
+            Aufräumen
+          </li>
+        </ul>
+      </section>
+      <section>
+  <pre><code class="php">
+    $view->init_display();
+    $view->init_handlers();
+
+    $view->build();
+    $view->pre_execute();
+    $view->execute();
+
+    $view->preview();
+
+    $view->render();
+    $view->destroy();
+  </code></pre>
+      </section>
+    </section>
+
+    <!--Tipps-->
+    <section>
+      <h2>Tipps</h2>
+      <ul>
+        <li>
+          Setze hilfreiche Einstellungen für Entwickler
+          <pre><code>
+          $ drush vd
+          $ drush views-development
+          </code></pre>
+        </li>
+        <li>Zeigt den SQL Code an!</li>
+        <li>Views Cache deaktivieren auf admin/structure/views/settings/advanced</li>
+      </ul>
+    </section>
+
+    <!--SQL Code-->
+    <section>
+      <h3>Teil 1: SQL Query</h3>
+      <pre><code class="sql">
+SELECT node.title AS node_title, node.nid AS nid
+{node} node
+WHERE (( (node.status = '1') ))
+ORDER BY node_created DESC
+LIMIT 10 OFFSET 0
+      </code></pre>
+      <ul>
+        <li>Konstruiert von Views</li>
+        <li>Resultat wird weiterverarbeit</li>
+        <li>=> Man kann nicht mit eigenem SQL starten</li>
+      </ul>
+    </section>
+
+    <!--Terminologie-->
+    <section>
+      <h2>Terminologie</h2>
+      <ul>
+        <li>
+          <strong>SELECT</strong> => Felder | views_handler_field
+        </li>
+        <li>
+          <strong>Tabellen/Joins</strong> => Relationships  | views_handler_relationship
+        </li>
+        <li>
+          <strong>WHERE</strong> => Filter (Contextual)   | views_handler_filter
+        </li>
+        <li>
+          <strong>ORDER BY</strong> => Sortierkriterien |   | views_handler_sort
+        </li>
+        <li>
+          <strong>LIMIT/OFFSET</strong> => Pager   | views_plugin_pager
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h1>Views Integration</h1>
+    </section>
+
+    <!--hook_views_api-->
+    <section>
+      <h2>Schritt 1: Views API</h2>
+      <ul>
+        <li>Gegen welche API Version wurde das Modul geschrieben:
+  <pre><code class="php">/**
+ * Implements hook_views_api().
+ */
+function $module_views_api() {
+  return array(
+   'api' => '3.0',
+    // (optional) Ordner der $module.views.inc
+    'path' => '',
+    // (optional) Ordner der Templates
+    'template path' => '', drupal_get_path('module', $module) . '/theme',
+  );
+}
+</code></pre>
+        </li>
+        <li>$module.views.inc Datei mit weiteren Hooks wird geladen</li>
+      </ul>
+    </section>
+
+
+    <!--Task: Module Template -->
+    <section>
+      <h2>Aufgabe: </h2>
+      <ul>
+        <li>Baue eine View </li>
+        <li>Schreibe ein Modul mit hook_views_api </li>
+        <li>Stelle ein Template fuer diese View im Modul bereit (Order "templates").
+        </li>
+        <li>Fragen zu Beginn?</li>
+      </ul>
+    </section>
+
+    <!--Describe your data-->
+    <section>
+      <section>
+        <h2>Schritt 2: Wie sieht die SQL Tabelle aus</h2>
+        <img src="../images/dblog_schema1.png" />
+      </section>
+
+      <section>
+        <h2>Eigene Basis-Tabelle</h2>
+        <img src="../images/wizard.png" />
+      </section>
+      <section>
+        <h3>Schritt 3: hook_views_data</h3>
+<pre><code class="php">
+/**
+ * Implements hook_views_data().
+ */
+function dblog_views_data() {
+  $data['watchdog']['table']['group'] = t('Watchdog');
+  $data['watchdog']['table']['base'] = array(
+    'field' => 'wid',
+    'title' => t('Watchdog entry'),
+    'help' => t('Watchdog entries are a list of recorded system events.'),
+    'weight' => 25,
+  );
+
+  return $data;
+</code></pre>
+      </section>
+
+
+    <!-- What is a handler -->
+    <section>
+      <h3>Handler</h3>
+      <ul class="double-margin">
+        <li class="fragment">Kontrolliert die Integration zw. der Tabelle und Views</li>
+        <li class="fragment">Verändert die Query je nach Bedarf</li>
+        <li class="fragment">Nicht auswählbar via UI</li>
+      </ul>
+      <img  class="fragment" src="../images/filter_config.png" />
+    </section>
+
+    <section>
+      <pre><code class="php">
+  $data['watchdog']['type'] = array(
+    'title' => t('Type'),
+    'help' => t('Type of log message.'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_string',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_string',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+
+  return $data;
+      </code></pre>
+      </section>
+
+      <section>
+        <h2>Wichtige Handler</h2>
+        <img src="../images/cloud_large.png" />
+      </section>
+
+    </section>
+
+    <section>
+      <section>
+        <h2>Der erste eigene Handler: Field</h2>
+        <pre><code>$ drush vd</code></pre>
+        <ul>
+          <li>Zeigt alle Optionen in der UI</li>
+          <li>Macht das Bearbeiten schneller</li>
+          <li>Zeigt die Debug-Fehlermeldungen von Views</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Eintrag in hook_views_data</h3>
+        <pre><code class="php">
+/**
+ * Implements hook_views_data().
+ */
+function dblog_views_data() {
+  $data['watchdog']['message'] = array(
+    ...
+    'field' => array(
+      'handler' => 'dblog_handler_field_watchdog_message',
+    ),
+    ...
+  );
+  return $data;
+}
+        </code></pre>
+      </section>
+
+      <section>
+        <h3>Erweiterung</h3>
+        Hinzufügen zu existierder Tabelle:
+<pre><code class="php">
+  /**
+   * Implements hook_views_data_alter().
+  */
+  function custom_views_data_alter(&$data) {
+    $data['watchdog']['delete'] = array(
+      'title' => t('Delete link'),
+      'help' => t('Provides a link to delete a watchdog entry.'),
+      'field' => array(
+        'handler' => 'custom_handler_field_watchdog_delete',
+      ),
+    );
+  }
+</code></pre>
+      </section>
+
+      <section>
+        <h3>Anlegen der Handler-Datei</h3>
+        <ul>
+          <li>Erstellen einer "dblog_handler_field_watchdog_message.inc".</li>
+          <li>.info File erweitern
+<pre><code>
+name = dblog
+core = 7.x
+files[] = dblog_handler_field_watchdog_message.inc
+</code></pre>
+          </li>
+          <li>Cache hart leeren, admin/structure/views/advanced</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Handler Datei / Klasse</h3>
+        <ul>
+          <li class="fragment">Keine Angst</li>
+          <li class="fragment">Ziel: Verwende theme_dblog_message zur Ausgabe
+          <img src="../images/watchdog.png" />
+          </li>
+          <li class="fragment">
+<pre><code class="php">
+class dblog_handler_field_watchdog_message extends views_handler_field {
+  function render($values) {
+    // Get the actual data from the db.
+    $value = $this->get_value($values);
+    return $this->sanitize_value($value);
+  }
+
+}
+</code></pre>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Laden zusätzlicher Felder</h3>
+<pre><code class="php">
+class dblog_handler_field_watchdog_message extends views_handler_field {
+  /**
+   * Overrides \views_handler_field::init().
+   */
+  function init(&$view, &$options) {
+    parent::init($view, $options);
+
+    // Add more fields to the query.
+    $this->additional_fields[] = 'variables';
+    $this->additional_fields[] = 'wid';
+  }
+
+  function render($values) {
+    // Get the actual data from the db.
+    $message = $this->get_value($values);
+    $wid = $this->get_value($values, 'wid');
+    $variables = $this->get_value($values, 'variables');
+
+
+    $event = new stdClass();
+    $event->wid = $wid;
+    $event->message = $message;
+    $event->variables = $variables;
+
+    return theme('dblog_message', array('event' => $event));
+
+    return $this->sanitize_value($value);
+  }
+}
+</code></pre>
+      </section>
+
+      <section>
+        <h3>Einstellungen auf einem Handler</h3>
+        Idee: Checkbox [] Link auf die Watchdog Message
+        <img class="fragment" src="../images/link_to_node.png" />
+      </section>
+
+      <section>
+<pre><code class="php">
+class dblog_handler_field_watchdog_message extends views_handler_field {
+  public function option_definition() {
+    $options = parent::options_definition();
+
+    $options['link_to_watchdog'] = array('default' => FALSE, 'bool' => TRUE);
+    // $options['text'] = array('default' => "", 'translatable' => TRUE);
+    return $options;
+  }
+
+  public function options_form(&$form, &$form_state) {
+    parent::options_form($form, $form_state) {
+
+    $form['link_to_watchdog'] = array(
+      '#title' => t('Link to watchdog entry'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->options['link_to_watchdog'],
+    );
+  }
+
+  function render($values) {
+    return theme('dblog_message', array('event' => $event, 'link' => $this->options['link_to_watchdog']));
+  }
+}
+</code></pre>
+        </section>
+      <section>
+        <h4>Verbesserte Version</h4>
+<pre><code class="php">
+class dblog_handler_field_watchdog_message extends views_handler_field {
+  function render($values) {
+    $value = $this->get_value($values);
+    $message = theme('dblog_message', array('event' => $event, 'link' => FALSE);
+    return $this->render_link($message, $values);
+  }
+  function render_link($data, $values) {
+    $wid = $this->get_value($values, 'wid');
+    if ($this->options['link_to_watchdog']) {
+      $this->options['alter']['make_link'] = TRUE;
+      $this->options['alter']['path'] = 'admin/reports/event/' . $wid;
+    }
+    return $data;
+  }
+}
+</code></pre>
+      </section>
+
+      <section>
+        <h3>Zusammenfassung</h3>
+        <ul>
+          <li class="fragment">hook_views_api um den Handler zu setzen</li>
+          <li class="fragment">.info Datei</li>
+          <li class="fragment">Render Methode für jede Zeile</li>
+          <li class="fragment">option_definition/options_form für Optionen</li>
+          <li class="fragment">$this->options['name'] für den Wert der Option</li>
+        </ul>
+      </section>
+
+    </section>
+
+    <section>
+      <section>
+        <h2>Erster Filter Handler</h2>
+        <ul class="double-margin">
+          <li>Fast alles Wissen kann übernommen werden:</li>
+          <li class="fragment">hook_views_data zum Setzen</li>
+          <li class="fragment">.info für die Datei</li>
+          <li class="fragment">Extenden der Basis-Klasse</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Idee: Node-Title Textfield mit Autocomplete</h3>
+        <img src="../images/autocomplete_title.png" />
+      </section>
+
+      <section>
+<pre><code class="php">
+class views_data_title_handler_filter_title extends views_handler_filter {
+
+  /**
+   * Overrides \views_handler_filter_numeric::value_form().
+   */
+  function value_form(&$form, &$form_state) {
+    parent::value_form($form, $form_state);
+
+    $form['value'] = array(
+      '#type' => 'textfield',
+      '#autocomplete_path' => 'node/title/autocomplete',
+      '#default_value' => $this->value,
+    );
+  }
+
+  /**
+   * Overrides \views_handler_filter_numeric::query().
+   */
+  function query() {
+    $this->ensure_my_table();
+    // $this->query->add_where($this->options['group'], "$this->table_alias.$this->real_field", $this->value, $this->operator);
+    $this->query->add_where($this->options['group'], "$this->table_alias.$this->title", $this->value, $this->operator);
+  }
+
+}
+</code></pre>
+      </section>
+
+      <section>
+        <h3>Zusammenfassung</h3>
+        <ul>
+          <li>Registrieren des handlers in hook_views_data</li>
+          <li>Wichtige Methoden:</li>
+          <li>query()</li>
+          <li>value_form()</li>
+        </ul>
+      </section>
+    </section>
+
+    <!-- More handlers -->
+    <section>
+
+      <section>
+        <h1>Get the power</h1>
+        <img src="../images/cloud_large.png" />
+      </section>
+
+      <section>
+        <h3>Filter: Eines von X</h3>
+        <img src="../images/filter_in_operator.png" />
+      </section>
+
+      <section>
+        <h3>Filter: Eines von X</h3>
+
+<pre><code class="php">
+function $module_views_data() {
+  $data['table']['field'] = array(
+    ...
+    'filter' => array(
+      'handler' => 'views_handler_filter_in_operator',
+      'options callback' => '$module_options',
+     ),
+  );
+}
+
+function $module_options() {
+  return array(
+    'value_1' => t('Shown value'),
+    'value_2' => t('Shown value (2)'),
+    'value_3' => t('Shown value (3)'),
+  );
+}
+</code></pre>
+      </section>
+
+      <section>
+        <h3>Feld: Eines von X</h3>
+        Beispiel: In der Datenbank steht Nummer. Rendere Menschenlesbar
+        <pre><code class="php">
+function $module_views_data() {
+  $data['table']['field'] = array(
+    ...
+    'field' => array(
+      'handler' => 'views_handler_field_machine_name',
+      'options callback' => '$module_options',
+    ),
+  );
+}
+
+function $module_options() {
+  return array(
+    'value_1' => t('Shown value'),
+    'value_2' => t('Shown value (2)'),
+    'value_3' => t('Shown value (3)'),
+  );
+}
+        </code></pre>
+      </section>
+
+      <section>
+        <h3>Field: Irgendwas mit entities</h3>
+        <ul>
+          <li class="fragment">
+            Problem: Entity laden ist kostspielig und relativ kompliziert.
+          </li>
+          <li class="fragment">
+            Der Handler macht es automatisch und macht so komplexe Dinge sehr einfach
+          </li>
+        </ul>
+<pre class="fragment"><code class="php">
+class entity_views_handler_field_label extends views_handler_field_entity {
+  /**
+   * Render the label using the entity_label() function.
+   */
+ function render($values) {
+    if (($entity = $this->get_value($values)) && entity_access('view', $this->entity_type, $entity)) {
+      return entity_label($this->entity_type, $entity);
+    }
+  }
+}
+</code></pre>
+
+      </section>
+
+    </section>
+
+    <!-- JOIN/Relationship -->
+    <section>
+      <section>
+        <h3>Verknüpfungen zwischen Daten</h3>
+        <img src="../images/relationship.svg" />
+      </section>
+
+      <section>
+        <h3>Typen von Verknüpfungen</h3>
+        <ul>
+          <li class="fragment">Automatische Verknüpfungen (JOINS)
+          <img src="../images/comment_stats.png" />
+          </li>
+          <li class="fragment">Explizite Verknüpfungen  (in der UI auswählbar/Relationships)</li>
+        </ul>
+      </section>
+
+      <!--JOINS-->
+      <section>
+        <h3>Joins</h3>
+<pre class="fragment"><code class="sql">
+SELECT node.title AS node_title, node.nid AS nid, users_node_uid as uid
+FROM {node} node
+INNER JOIN {users} users_node ON node.uid = users_node.uid
+WHERE (( (node.status = '1') ))
+ORDER BY node_created DESC
+LIMIT 10 OFFSET 0
+</code></pre>
+<pre class="fragment"><code class="php">
+$data['node_comment_statistics']['table']['join'] = array(
+  'node' => array(
+    'type' => 'INNER',
+    'left_field' => 'nid',
+    'field' => 'nid',
+  ),
+);
+</code></pre>
+        <div class="fragment">Reihenfolge anders als erwartet</div>
+
+        </section>
+      <section>
+        <h3>Erweiterte Joins</h3>
+<pre><code class="sql">
+SELECT node.title AS node_title, node.nid AS nid, history.timestamp AS history_timestamp, node.created AS node_created, node.changed AS node_changed
+FROM {node} node
+LEFT JOIN {history} history ON node.nid = history.nid AND history.uid = '1'
+WHERE (( (node.status = '1') ))
+ORDER BY node_created DESC
+LIMIT 10 OFFSET 0
+</code></pre>
+        </section>
+        <section>
+          <h3>Erweiterte Joins</h3>
+<pre><code class="php">
+$data['history']['table']['join'] = array(
+  'node' => array(
+    'table' => 'history',
+    'left_field' => 'nid',
+    'field' => 'nid',
+    'extra' => array(
+      array('field' => 'uid', 'value' => '***CURRENT_USER***', 'numeric' => TRUE),
+    ),
+  ),
+);
+</code></pre>
+        </section>
+
+      <section>
+        <h3>Relationships</h3>
+        <ul class="double-margin">
+          <li>Verwendung bei 1zu N</li>
+          <li>Eigener Handler-Typ => Optionen ([] required)</li>
+          <li>anderer Entity Type</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>relationships: hook_views_data</h3>
+<pre><code class="php">
+$data['node']['uid'] = array(
+  'relationship' => array(
+    'title' => t('Author'),
+    'help' => t('Relate content to the user who created it.'),
+    'handler' => 'views_handler_relationship',
+    'base' => 'users',
+    'field' => 'uid',
+    'label' => t('author'),
+  ),
+);
+</code></pre>
+      </section>
+
+    </section>
+
+    <!--Entity API-->
+    <section>
+      <h3>Gibt es da nicht was von ENTITY API?</h3>
+      <section>
+        <ul class="double-margin">
+        <li class="fragment">Core-Entity in D7 nicht vollständig</li>
+        <li class="fragment">Allgemeine Features: Rendern, Schreiben, Lesen etc.</li>
+        <li class="fragment">Automatische Views Integration basierend auf Meta-Daten</li>
+        <li class="fragment">Drupal 8</li>
+      </ul>
+      </section>
+      <section>
+        <h3>Entity property data</h3>
+<pre><code class="php">
+/**
+ * Implements hook_entity_property_info().
+ */
+function node_enitity_property_info() {
+  $properties['nid'] = array(
+    'label' => t("Node ID"),
+    'type' => 'integer',
+    'description' => t("The unique ID of the node."),
+    'schema field' => 'nid',
+  );
+  $properties['author'] = array(
+    'label' => t("Author"),
+    'type' => 'user',
+    'description' => t("The author of the node."),
+    'setter callback' => 'entity_property_verbatim_set',
+    'setter permission' => 'administer nodes',
+    'required' => TRUE,
+    'schema field' => 'uid',
+  );
+}
+</code></pre>
+      </section>
+      <section>
+        <h4>Views Controller</h4>
+<pre><code class="php">
+function og_entity_info() {
+  $info['og_membership'] = array(
+    'views controller class' => 'OgMembershipViewsController',
+  );
+  return $info;
+}
+class OgMembershipViewsController extends EntityDefaultViewsController {
+  public function views_data() {
+    $data = parent::views_data();
+
+    $data['og_membership']['state']['filter']['handler'] =
+      'og_handler_filter_group_audience_state';
+    $data['og_membership']['state']['field']['handler'] =
+      'og_handler_field_group_audience_state';
+    return $data;
+  }
+}
+</code>
+</pre>
+      </section>
+    </section>
+
+  <!-- Plugins -->
+  <section>
+
+    <!-- What is a plugin -->
+    <section>
+      <h3>$Plugin</h3>
+      <ul>
+        <li>Steuern das allgemeine Verhalten einer View</li>
+        <li>Jedes Plugin hat bestimmte Zwecke</li>
+        <li>Austauschbar</li>
+        <li>Auswählbar</li>
+      </ul>
+      <img src="../images/plugin_style.png" />
+    </section>
+
+      <section>
+        <h2>Wie funktionieren Plugins?</h2>
+        <h3>Verwendet Informationen aus der exportieren View:</h3>
+    <pre><code class="php">
+$handler->display->display_options['query']['type'] = 'views_query';
+$handler->display->display_options['query']['options']['query_comment'] = FALSE;
+$handler->display->display_options['exposed_form']['type'] = 'basic';
+$handler->display->display_options['pager']['type'] = 'full';
+    </code></pre></section>
+     <section> <h3>Plugins werden geladen und initialisiert:</h3>
+    <pre><code class="php">
+$plugin = views_get_plugin('pager', 'full');
+$plugin->init($view, $display, $options);
+    </code></pre>
+       Informationen aus hook_views_plugins.
+     </section>
+
+  </section>
+
+
+    <!-- Plugin: Default argument -->
+  <section>
+    <h2>Plugin-typ: Argument default</h2>
+    <section>
+      <ul>
+        <li>Stellen Werte für Contextual Filter bereit, falls kein Argument vorhanden
+          <img src="../images/argument_default.png" />
+        </li>
+        <li>Vorteil gegenüber Eval: PHP Code in der Versionskontrolle</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>hook_views_plugins</h2>
+<pre><code class="php">
+/**
+* Implements hook_views_plugins().
+*/
+function $module_views_plugins() {
+  $plugins['argument default']['name'] = array(
+    'title' => t('Titel des Plugins in der UI'),
+    'handler' => '$module_views_plugin_argument_default_$name',
+  );
+
+  return $plugins;
+}
+</code></pre>
+    </section>
+
+    <section>
+      <h5>Klasse mit einer Methode: get_argument()</h5>
+    <pre><code class="php">
+class $module_views_plugin_argument_default_$name extends views_plugin_argument_default {
+
+  function get_argument() {
+    return rand(0, 100);
+  }
+
+}
+    </code></pre>
+    </section>
+  </section>
+
+  <section>
+    <h2>!STOP: Häufige Probleme zu Beginn!</h2>
+    <ul>
+      <li><strong>hook_views_plugins wird nicht ausgeführt</strong>:<br>
+        hook_views_api/$module.views.inc ✓</li>
+      <li><strong>Plugin nicht angezeigt</strong>: <br>
+        return $plugins vergessen ✓</li>
+      <li><strong>Plugin wird nicht gespeichert</strong>: <br>
+        Class in die $module.info eintragen ✓ <br />
+        Class-Name/Eintrag in hook_views_plugins gleich ✓
+      </li>
+    </ul>
+  </section>
+
+  <!-- TASK: Argument default Plugin -->
+  <section>
+    <h2>Aufgabe:</h2>
+    <ul>
+      <li>Schreibe ein Modul </li>
+      <li>Implementiere hook_views_api </li>
+      <li>Implementiere hook_views_plugins in $module.views.inc </li>
+      <li>Schreibe Default argument plugin, welches rand(0, 100) zurückliefert.
+      </li>
+      <li>Fragen zu Beginn?</li>
+    </ul>
+  </section>
+
+  <!-- Argument validator plugin -->
+  <section>
+    <h2>Plugin-Typ: Argument Validator</h2>
+    <section>
+      <ul class="double-margin">
+        <li>Validiert Argument auf Richtigkeit </li>
+        <li>Verändert den Wert des Arguments </li>
+        <li>Setzt den Titel</li>
+      </ul>
+    </section>
+    <section>
+ <pre><code class="php">
+class $module_views_plugin_argument_validate_example extends views_plugin_argument_validate {
+
+  function validate_argument($arg) {
+    if ($arg > 100) {
+      $this->argument->validated_title = t('More then hundred.');
+      $this->argument->argument = 100;
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+}
+</code></pre>
+    </section>
+  </section>
+
+    <!-- Feel the power v2-->
+    <section>
+      <h2>Optionen für Plugins:</h2>
+      <section>
+      <pre><code class="php">
+  function options_definition() {
+    $options = parent::options_definition();
+
+    $options['min'] = array('default' = 0);
+    $options['max'] = array('default' = 100);
+    return $options;
+  }
+
+      </code></pre>
+      </section>
+      <section>
+    <pre><code class="php">
+  function option_form(&$form, &$form_state) {
+    parent::option_form($form, $form_state);
+    $form['min'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Lower range'),
+      '#default_value' => $this->options['min'],
+    );
+    $form['max'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Upper range'),
+      '#default_value' => $this->options['min'],
+    );
+  }
+    </code></pre>
+      </section>
+
+      <section>
+        <pre><code class="php">
+  function validate_argument($arg) {
+  .. $this->options['min'];
+  .. $this->options['max'];
+  }
+        </code></pre>
+      </section>
+
+      <!--TASK: Add Options to the plugin -->
+      <section>
+        <h2>Aufgabe:</h2>
+        <ul>
+          <li>Erweitere vorhandenes Plugin</li>
+          <li>Definiere Optionen für min/max</li>
+          <li>Füge Formular hinzu</li>
+          <li>Benutze die Optionen im Plugin.</li>
+          <li>Fragen zu Beginn?</li>
+        </ul>
+      </section>
+
+    </section>
+
+    <!-- Other Plugin types -->
+    <section>
+      <h2>Weitere Plugin Typen</h2>
+      <ul>
+        <li>Style: Wie wird die View ausgegeben</li>
+        <li>Row: Wie wird eine Zeile ausgegeben</li>
+        <li>Access: Zugriffskontrolle</li>
+        <li>Sonstige: pager, exposed_form, display, cache, query,</li>
+        <li><strong>Wichtig</strong> views_views_plugins() in views/includes/plugins.inc</li>
+      </ul>
+    </section>
+
+    <!--Style plugin-->
+    <section>
+      <section>
+        <h3>Plugin Beispiel: Style Plugin</h3>
+        <ul>
+          <li>
+            Idee: Rendere eine View in einem Fieldset:
+            <img src="../images/fieldset.png" />
+          </li>
+          <li>Option 1: Collapsible | Option 2: Collapsed</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>hook_views_plugins</h3>
+<pre><code class="php">
+$plugins['style']['fieldset'] = array(
+  'title' => t('Fieldset'),
+  'help' => t('Renders the view in a fieldset'),
+  'handler' => 'views_example_style_plugin_style_fieldset',
+  'theme' => 'views_example_style_views_fieldset',
+
+  'uses row plugin' => TRUE,
+  'uses fields' => FALSE,
+  'uses row class' => TRUE,
+  'uses grouping' => TRUE,
+
+  'uses options' => TRUE,
+  'type' => 'normal',
+);
+</code></pre>
+        <strong>hook_theme</strong> wird automatisch angelegt
+      </section>
+
+      <section>
+        <h3>Plugin code</h3>
+<pre><code class="php">
+class views_example_style_plugin_style_fieldset extends views_plugin_style_default {
+
+  /**
+  * Overrides \views_plugin_style::options_definition().
+  */
+  function option_definition() {
+    $options = parent::option_definition();
+
+    $options['collapsible'] = array('default' => TRUE, 'bool' => TRUE);
+    $options['collapsed'] = array('default' => FALSE, 'bool' => TRUE);
+
+    return $options;
+  }
+
+  /**
+   * Overrides \views_plugin_style::options_form().
+   */
+  function options_form(&$form, &$form_state) {
+    parent::options_form($form, $form_state);
+
+    $form['collapse_settings'] = array(
+      '#title' => t('Fieldset settings'),
+      '#type' => 'fieldset',
+      '#collapsible' => FALSE,
+      '#collapsed' => FALSE,
+    );
+    $form['collapse_settings']['collapsible'] = array(
+      '#title' => t('Collapsible fieldset'),
+      '#type' => 'checkbox',
+      '#description' => t('Check to allow the user to collaps the fieldset'),
+      '#default_value' => $this->options['collapsible'],
+    );
+
+    $form['collapse_settings']['collapsed'] = array(
+      '#title' => t('Collapsed by default'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->options['collapsed'],
+    );
+  }
+}
+</code></pre>
+      </section>
+
+      <section>
+        <h3>Hilfreiche Funktionen zum Rendern</h3>
+        <ul>
+          <li><pre><code class="php">$style->get_field($view->row_index, 'field_name')</code></pre></li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Template</h3>
+<pre><code class="php">
+/**
+ * @file
+ * Template to display a view in a single fieldset.
+ *
+ * @ingroup views_templates
+ */
+
+print render($fieldset);
+
+</code></pre>
+      </section>
+
+      <section>
+        <h3>Zusammenfassung Style plugin</h3>
+        <ol >
+          <li>hook_views_plugins Eintrag</li>
+          <li>Plugin Datei anlegen</li>
+          <li>Variablen vorbereiten in hook_preprocess_HOOK()</li>
+          <li>tpl.php anlegen und entsprechend Variablen ausgeben</li>
+        </ol>
+      </section>
+
+    </section>
+
+    <!--Views Attachment pager-->
+    <section>
+      <section>
+        <h2>Plugin Beispiel: Views Attachment Pager</h2>
+        <img src="../images/pager_1.png" />
+      </section>
+      <section>
+        <img src="../images/pager_2.png" />
+      </section>
+
+      <section>
+        <ul>
+          <li>Ziel: Attachment oben und Haupt-View unten</li>
+          <li>Pager, welcher beide gleichzeitig verwaltet</li>
+        </ul>
+      </section>
+
+      <section>
+        <img src="../images/views_attachment_pager.png" />
+      </section>
+
+      <section>
+        <pre><code class="php">
+function query() {
+  parent::query();
+
+  // Get items_per_page options of both displays, so get the info from the
+  // current display and the other one.
+  list($items_per_page_main, $items_per_page_attachment) = $this->getDisplayItemsPerPage();
+
+  // Sum them up so all items are queried all the time.
+  $limit = $this->total_items_per_page = $items_per_page_attachment + $items_per_page_main;
+
+  // The actual offset is always handled on the pre_render level.
+  $offset = $this->current_page * $this->total_items_per_page;
+  if (!empty($this->options['total_pages'])) {
+    if ($this->current_page >= $this->options['total_pages']) {
+      $limit = $this->total_items_per_page;
+      $offset = $this->options['total_pages'] * $this->total_items_per_page;
+    }
+  }
+
+  $this->view->query->set_limit($limit);
+  $this->view->query->set_offset($offset);
+}
+        </code></pre>
+      </section>
+      <section>
+        <pre><code class="php">
+/**
+ * Overrides views_plugin_pager_full::pre_render().
+ */
+function pre_render(&$result) {
+  parent::pre_render($result);
+
+  // Truncate the actual result based on the offset/items_per_page settings.
+  // For example the page shows 2 items, offset 1 and the attachment 1 with
+  // no offset.
+  $result = array_splice($result, $this->get_offset(), ($this->get_items_per_page()));
+}
+        </code></pre>
+      </section>
+
+    </section>
+
+  <!--@todo sonstiges-->
+
+  </div>
+
+  <!-- The navigational controls UI -->
+  <aside class="controls">
+    <a class="left" href="#">&#x25C4;</a>
+    <a class="right" href="#">&#x25BA;</a>
+    <a class="up" href="#">&#x25B2;</a>
+    <a class="down" href="#">&#x25BC;</a>
+  </aside>
+
+  <!-- Presentation progress bar -->
+  <div class="progress"><span></span></div>
+
+</div>
+
+<script src="lib/js/head.min.js"></script>
+<script src="js/reveal.min.js"></script>
+
+<script>
+
+  // Full list of configuration options available here:
+  // https://github.com/hakimel/reveal.js#configuration
+  Reveal.initialize({
+    controls:true,
+    progress:true,
+    history:true,
+
+    theme:Reveal.getQueryHash().theme || 'default', // available themes are in /css/theme
+    transition:Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/linear(2d)
+
+    // Optional libraries used to extend on reveal.js
+    dependencies:[
+      { src:'lib/js/highlight.js', async:true, callback:function () {
+        window.hljs.initHighlightingOnLoad();
+      } },
+      { src:'lib/js/classList.js', condition:function () {
+        return !document.body.classList;
+      } },
+      { src:'lib/js/showdown.js', condition:function () {
+        return !!document.querySelector('[data-markdown]');
+      } },
+      { src:'lib/js/data-markdown.js', condition:function () {
+        return !!document.querySelector('[data-markdown]');
+      } },
+      { src:'/socket.io/socket.io.js', async:true, condition:function () {
+        return window.location.host === 'localhost:1947';
+      } },
+      { src:'plugin/speakernotes/client.js', async:true, condition:function () {
+        return window.location.host === 'localhost:1947';
+      } }
+    ]
+  });
+
+</script>
+
+</body>
+</html>

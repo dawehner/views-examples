@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * Implements hook_views_api().
+ */
+function views_example_style_views_api() {
+  return array(
+    'api' => 3.0,
+  );
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for theme_views_example_style_views_fieldset.
+ */
+function template_preprocess_views_example_style_views_fieldset(&$vars) {
+  $view = $vars['view'];
+  $style_plugin = $view->style_plugin;
+
+  $inner_content = theme('views_view_unformatted', $vars);
+
+  $element = array(
+    '#title' => $view->get_title(),
+    '#type' => 'fieldset',
+    '#collapsed' => $style_plugin->options['collapsed'],
+    '#collapsible' => $style_plugin->options['collapsible'],
+    '#children' => $inner_content,
+    '#parents' => array(),
+  );
+  $form_state = array();
+  $element = form_process_fieldset($element, $form_state);
+
+  $vars['fieldset'] = $element;
+}

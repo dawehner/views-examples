@@ -1,0 +1,6 @@
+name = Views Data title
+core = 7.x
+
+dependencies[] = views
+
+files[] = views_data_title_handler_filter_title.inc

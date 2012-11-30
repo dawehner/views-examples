@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * Implements hook_views_api().
+ */
+function views_data_title_views_api() {
+  return array(
+    'api' => 3.0,
+  );
+}
+
+/**
+ * Implements hook_menu()
+ */
+function views_data_title_menu() {
+  $items = array();
+
+  $items['node/title/autocomplete'] = array(
+    'page callback' => 'views_data_title_autocomplete',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Provides an autocomplete callback for node titles.
+ */
+function views_data_title_autocomplete($string = "") {
+  if ($string) {
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node');
+    $query->propertyCondition('title', $string, 'STARTS_WITH');
+
+    $matches = array();
+    foreach ($query->execute() as $entity_type => $entities) {
+      dsm($entities);
+      $entities = entity_load($entity_type, array_keys($entities));
+      foreach ($entities as $entity_id => $entity) {
+        $matches[$entity->title] = $entity->title;
+      }
+    }
+
+    drupal_json_output($matches);
+    exit;
+  }
+}
